@@ -125,14 +125,14 @@ void parseCommands(char * data[MAX_COMMANDS]){
  */
 int main(void){
 	char buffer[BUF_SIZE];
-	char *test = (char *)malloc(BUF_SIZE/3);
+	char *test;
 	char **input = (char **)calloc(MAX_COMMANDS, sizeof(char *));
 	const char *delim = " ";
 	while(true){
 		printf("amici> ");
 		fgets(buffer, BUF_SIZE, stdin);
 		for(int i = 0; i < MAX_COMMANDS; i++){
-			test =  strtok(buffer, delim);
+			test = strtok(buffer, delim);
 			if(test != NULL){
 				input[i] = (char *)realloc(input[i], strlen(test)+1);
 				strcpy(input[i], test);
@@ -149,6 +149,5 @@ int main(void){
 		free(input[i]);
 	}
 	free(input);
-	free(test);
 	return 0;
 }
