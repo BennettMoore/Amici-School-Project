@@ -14,8 +14,10 @@
 #include "hash.h"
 #include "table.h"
 
+#define _POSIX_C_SOURCE 200809L //Allows for strdup to work
 #define BUF_SIZE 1024
 #define MAX_COMMANDS 3
+#define FRIEND_BLOCK 10
 
 typedef struct person_s{
 	char *first_name;		// First name
@@ -25,6 +27,42 @@ typedef struct person_s{
 	size_t friend_count;		// Current number of friends
 	size_t max_friends;		// Maximum number of friends
 } person_t;
+
+Table t;
+
+
+/*
+ * Print function to initialize table
+ *
+ * @param key The key of the table entry
+ * @param value The value of the table entry
+ *
+ */
+void tablePrint(const void* key, const void* value){
+	(void)key;
+	person_t* p1 = (person_t*)value;
+	printf("%s, %s (%s)\n", p1->first_name, p1->last_name, p1->handle);
+}
+
+/*
+ * Delete table entry
+ *
+ * @param key The key of the table entry
+ * @param value The value of the table entry
+ *
+ */
+void tableDel(void* key, void* value){
+	(void)key;
+	person_t* p1 = (person_t*)value;
+
+	free(p1->first_name);
+	free(p1->last_name);
+	free(p1->handle);
+	for(size_t i = 0; i < p1->max_friends; i++){
+		free(p1->friends[i]);
+	}
+	free(p1->friends);
+}
 
 /*
  * Clears database and reinitializes storage
@@ -128,6 +166,9 @@ int main(void){
 	char *test;
 	char **input = (char **)calloc(MAX_COMMANDS, sizeof(char *));
 	const char *delim = " ";
+	
+	t = ht_create(str_hash, str_equals, tablePrint, tableDel);
+
 	while(true){
 		printf("amici> ");
 		fgets(buffer, BUF_SIZE, stdin);
@@ -149,5 +190,6 @@ int main(void){
 		free(input[i]);
 	}
 	free(input);
+	ht_destroy(t);
 	return 0;
 }
