@@ -14,6 +14,9 @@
 #include "hash.h"
 #include "table.h"
 
+#define BUF_SIZE 1024
+#define MAX_COMMANDS 3
+
 typedef struct person_s{
 	char *first_name;		// First name
 	char *last_name;		// Last name
@@ -28,6 +31,7 @@ typedef struct person_s{
  *
  */
 void reformat(bool is_quit){
+	if(is_quit) return; //To stop "Unused parameter" error
 	//Free contents of table
 	//Free table
 	//If is_quit is false, create new, empty table
@@ -51,6 +55,7 @@ void printStats(){
  *
  */
 void printInfo(char * handle){
+	if(handle != NULL) return; //To stop "Unused parameter" error
 	//If user has no friends, print that they have no friends
 	//Else if user has 1 friend, print that they have 1 friend and show friend
 	//Else print that user has N friends and show each friend
@@ -63,6 +68,8 @@ void printInfo(char * handle){
  *
  */
 void friend(char * handles[], bool is_friendly){
+	if(handles != NULL) return; //To stop "Unused parameter" error
+	if(is_friendly) return; //To stop "Unused parameter" error
 	//If is_friendly is true, then check if the users are already friends
 		//If not friends, add them as friends and print to console
 	//If is_friendly is false, then check if the uers are not friends
@@ -75,7 +82,7 @@ void friend(char * handles[], bool is_friendly){
  * @param data An array of string commands
  *
  */
-void parseCommands(char * data[]){
+void parseCommands(char * data[MAX_COMMANDS]){
 	if(strcmp(data[0], "add") == 0){
 		//Format: add first_name last_name handle
 		//If valid and vacant, add new person to hash table	
@@ -116,10 +123,32 @@ void parseCommands(char * data[]){
  *
  * @return Whether the code ran successfully or not
  */
-int main(){
-	//While true
-		//Print "amici> "
-		//Read in command
-		//Send to parseCommands
+int main(void){
+	char buffer[BUF_SIZE];
+	char *test = (char *)malloc(BUF_SIZE/3);
+	char **input = (char **)calloc(MAX_COMMANDS, sizeof(char *));
+	const char *delim = " ";
+	while(true){
+		printf("amici> ");
+		fgets(buffer, BUF_SIZE, stdin);
+		for(int i = 0; i < MAX_COMMANDS; i++){
+			test =  strtok(buffer, delim);
+			if(test != NULL){
+				input[i] = (char *)realloc(input[i], strlen(test)+1);
+				strcpy(input[i], test);
+				test = strtok(NULL, delim);
+			}
+			else break;
+		}
+		if(strcmp(input[0], "quit") == 0){ //Temporary exit statement
+			break;
+		}
+		parseCommands(input);
+	}
+	for(int i = 0; i < MAX_COMMANDS; i++){
+		free(input[i]);
+	}
+	free(input);
+	free(test);
 	return 0;
 }
