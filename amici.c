@@ -31,7 +31,7 @@ typedef struct person_s{
 
 //Global Variables
 Table t;
-int friends;
+int friendships;
 int people;
 
 
@@ -116,8 +116,73 @@ void printInfo(char * handle){
  *
  */
 void friend(char * handles[], bool is_friendly){
-	if(handles != NULL) return; //To stop "Unused parameter" error
-	if(is_friendly) return; //To stop "Unused parameter" error
+	printf("\t%s wants to be friends with %s\n", handles[0], handles[1]);
+	person_t* f1 = (person_t*)ht_get(t, (void*)handles[0]);
+	person_t* f2 = (person_t*)ht_get(t, (void*)handles[1]);
+	if(f1->friend_count == 0 || f2->friend_count == 0){ //If either person has no friends, there's no way they can be friends already
+		if(is_friendly){			//Add friend
+			//Adding new friend
+			f1->friends[f1->friend_count] = f2;
+			f2->friends[f2->friend_count] = f1;
+
+			//Tallying friendships
+			f1->friend_count++;
+			f2->friend_count++;
+			friendships++;
+			printf("\t%s and %s are now friends!\n", f1->handle, f2->handle);
+		}
+		else{ //Error check for...		//Remove friend
+			fprintf(stderr, "error: %s is not friends with %s\n", f1->handle, f2->handle);
+			return;
+		}
+	}
+	else{
+		for(size_t i = 0; i < f1->friend_count; i++){ //If f1 is friends with f2
+			if(f1->friends[i] == f2){
+				if(is_friendly){	//Add friend
+					fprintf(stderr, "error: %s is already friends with %s\n", f1->handle, f2->handle);
+					return;
+				}
+				else{			//Remove friend
+					for(size_t j = i; j < f1->friend_count + 1; j++){
+						f1->friends[j] = f1->friends[j+1]; 
+					}
+					f1->friend_count--; //Tallying friend removal
+					break;
+				}
+			}
+		}
+		for(size_t i = 0; i < f2->friend_count; i++){ //If f2 is friends with f1
+			if(f2->friends[i] == f1){
+				if(is_friendly){	//Add friend
+					f1->friends[f1->friend_count] = f2; //This will only trigger if there is an assymetrical friendship
+					fprintf(stderr, "error: %s is already friends with %s\n", f2->handle, f1->handle);
+					return;
+				}
+				else{			//Remove friend
+					for(size_t j = i; j < f2->friend_count + 1; j++){
+						f2->friends[j] = f2->friends[j+1];
+					}
+					f2->friend_count--; //Tallying friend removal
+					friendships--;
+					break;
+				}
+
+			}
+		}
+		if(is_friendly){		//Add friend
+			//Adding new friend
+			f1->friends[f1->friend_count] = f2;
+			f2->friends[f2->friend_count] = f1;
+			
+			//Tallying friendships
+			f1->friend_count++;
+			f2->friend_count++;
+			friendships++;
+			printf("\t%s and %s are now friends!\n", f1->handle, f2->handle);
+		}
+	}
+	printf("\tfriend function has run\n");
 	//If is_friendly is true, then check if the users are already friends
 		//If not friends, add them as friends and print to console
 	//If is_friendly is false, then check if the uers are not friends
@@ -134,7 +199,10 @@ void friend(char * handles[], bool is_friendly){
 void parseCommands(char ** data){
 	if(strcmp(data[0], "add") == 0){			//Add new user
 		//Validate command
-		if((data[1] != NULL && data[2] != NULL && data[3] != NULL) && (strlen(data[1]) > 0 && strlen(data[2]) > 0 && strlen(data[3]) > 0)){
+		if((data[1] != NULL && data[2] != NULL && data[3] != NULL)){
+			if(data[3][strlen(data[3])-1] == '\n'){
+				data[3][strlen(data[3])-1] = '\0';
+			}
 			if(!ht_has(t, (void*)data[3])){ 
 				//Person is initialized
 				person_t* new_person = calloc(1, sizeof(person_t));
@@ -146,11 +214,11 @@ void parseCommands(char ** data){
 				new_person->max_friends = FRIEND_BLOCK;
 				
 				//Put new person in table and add to people count
-				ht_put(t, (void*)new_person->handle, (void*)new_person);
+				ht_put(t, (void*)data[3], (void*)new_person);
 				people++;
 			}
 			else{ //Handle is taken
-				fprintf(stderr, "error: The handle '%s' is taken by another user\n", data[1]);
+				fprintf(stderr, "error: The handle '%s' is taken by another user\n", data[3]);
 			}
 		}
 		else{ //Invalid Command structure
@@ -160,6 +228,27 @@ void parseCommands(char ** data){
 	else if(strcmp(data[0], "friend") == 0){		//Make two users friends
 		//Format: friend handle1 handle2
 		//If valid, send to friend function (specify friend)
+		if(data[1] != NULL && data[2] != NULL){
+			if(data[2][strlen(data[2])-1] == '\n'){
+				data[2][strlen(data[2])-1] = '\0';
+			}
+			if(ht_has(t, (void*)data[1]) && ht_has(t, (void*)data[2])){
+				char * handles[] = {data[1], data[2]};
+				friend(handles, true);
+			}
+			else if(ht_has(t, (void*)data[1])){
+				fprintf(stderr, "error: %s is not a valid user\n", data[2]);
+			}
+			else if(ht_has(t, (void*)data[2])){
+				fprintf(stderr, "error: %s is not a valid user\n", data[1]);
+			}
+			else{
+				fprintf(stderr, "error: users not found\n");
+			}
+		}
+		else{
+			fprintf(stderr, "error: friend command usage: friend handle1 handle2\n");
+		}
 	}
 	else if(strcmp(data[0], "init") == 0){			//Clear table and reset it
 		//Format: init
@@ -215,7 +304,7 @@ int main(void){
 			}
 			else break;
 		}
-		if(strcmp(input[0], "quit") == 0){ //Temporary exit statement
+		if(strcmp(input[0], "quit\n") == 0){ //Temporary exit statement
 			break;
 		}
 		parseCommands(input);
