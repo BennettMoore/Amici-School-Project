@@ -102,10 +102,20 @@ void printStats(){
  *
  */
 void printInfo(char * handle){
-	if(handle != NULL) return; //To stop "Unused parameter" error
-	//If user has no friends, print that they have no friends
-	//Else if user has 1 friend, print that they have 1 friend and show friend
-	//Else print that user has N friends and show each friend
+	person_t* p1 = (person_t*)ht_get(t, (void*)handle);
+	if(p1->friend_count == 0){	//User has no friends
+		printf("User %s %s(%s) has no friends\n",p1->first_name, p1->last_name, p1->handle);
+	}
+	else if(p1->friend_count == 1){	//User has 1 friend
+		printf("User %s %s(%s) has 1 friend\n", p1->first_name, p1->last_name, p1->handle);
+		printf("\t%s %s(%s)\n", p1->friends[0]->first_name, p1->friends[0]->last_name, p1->friends[0]->handle);
+	}
+	else{				//User has 2+ friends
+		printf("User %s %s (%s) has %i friends\n", p1->first_name, p1->last_name, p1->handle,(int)p1->friend_count);
+		for(size_t i = 0; i < p1->friend_count; i++){
+			printf("\t%s %s(%s)\n", p1->friends[i]->first_name, p1->friends[i]->last_name, p1->friends[i]->handle);
+		}
+	}
 }
 
 /*
@@ -257,6 +267,20 @@ void parseCommands(char ** data){
 	else if(strcmp(data[0], "print") == 0){			//Print data on a specific user
 		//Format: print handle
 		//If valid, send to printInfo function
+		if(data[1] != NULL){
+			if(data[1][strlen(data[1])-1] == '\n'){
+				data[1][strlen(data[1])-1] = '\0';
+			}
+			if(ht_has(t, (void*)data[1])){
+				printInfo(data[1]);
+			}
+			else{
+				fprintf(stderr, "error: '%s' is not a valid user\n", data[1]);
+			}
+		}
+		else{
+			fprintf(stderr, "error: print command usage: print handle\n");
+		}
 	}
 	else if(strcmp(data[0], "quit") == 0){			//Clear table and exit program
 		//Format: quit
