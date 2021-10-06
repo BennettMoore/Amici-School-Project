@@ -293,8 +293,25 @@ void parseCommands(char ** data){
 		//Send to stat function
 	}
 	else if(strcmp(data[0], "unfriend") == 0){		//Make two users not friends
-		//Format: unfriend handle1 handle2
-		//If valid, send to friend function (specify unfriend)
+		///Validate command
+                if(data[1] != NULL && data[2] != NULL){
+                        //Remove newline
+                        if(data[2][strlen(data[2])-1] == '\n'){
+                                data[2][strlen(data[2])-1] = '\0';
+                        }
+                        //Check whether both users exist
+                        if(ht_has(t, (void*)data[1]) && ht_has(t, (void*)data[2])){
+                                char * handles[] = {data[1], data[2]};
+                                //Remove friendship
+                                friend(handles, false);
+                        }
+                        else{ //At least one handle could not be found
+                                fprintf(stderr, "error: users not found\n");
+                        }
+                }
+                else{ //Invalid command structure
+                        fprintf(stderr, "error: unfriend command usage: unfriend handle1 handle2\n");
+                }
 	}
 	else{ 							//Catch any unrecognizable commands
 		fputs("error: not a valid command", stderr);
