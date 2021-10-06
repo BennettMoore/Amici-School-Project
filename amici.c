@@ -285,8 +285,31 @@ void parseCommands(char ** data){
 		//Send to reformat function, then exit program (specify quitting)
 	}
 	else if(strcmp(data[0], "size") == 0){			//Print number of friends a user has
-		//Format: size handle
-		//If valid, print friend_count of user
+		//Validate command
+		if(data[1] != NULL){
+			//Remove newline character
+			if(data[1][strlen(data[1])-1] == '\n'){
+				data[1][strlen(data[1])-1] = '\0';
+			}
+			if(ht_has(t, (void*)data[1])){ //Does user exist
+				person_t* temp = (person_t*)ht_get(t, (void*)data[1]);
+				if(temp->friend_count == 0){
+					printf("User %s %s('%s') has no friends\n", temp->first_name, temp->last_name, temp->handle);
+				}
+				else if(temp->friend_count == 1){
+					printf("User %s %s('%s') has 1 friend\n", temp->first_name, temp->last_name, temp->handle);
+				}
+				else{
+					printf("User %s %s('%s') has %i friends\n", temp->first_name, temp->last_name, temp->handle, (int)temp->friend_count);
+				}
+ 			}
+			else{ //Handle could not be found
+				fprintf(stderr, "error: '%s' is not a valid user\n", data[1]);
+			}
+		}
+		else{ //Invalid command structure
+			fprintf(stderr, "error: print command usage: print handle\n");
+		}
 	}
 	else if(strcmp(data[0], "stats") == 0){			//Print cumulative user data
 		//Format: stats
@@ -294,24 +317,24 @@ void parseCommands(char ** data){
 	}
 	else if(strcmp(data[0], "unfriend") == 0){		//Make two users not friends
 		///Validate command
-                if(data[1] != NULL && data[2] != NULL){
-                        //Remove newline
-                        if(data[2][strlen(data[2])-1] == '\n'){
-                                data[2][strlen(data[2])-1] = '\0';
-                        }
-                        //Check whether both users exist
-                        if(ht_has(t, (void*)data[1]) && ht_has(t, (void*)data[2])){
-                                char * handles[] = {data[1], data[2]};
-                                //Remove friendship
-                                friend(handles, false);
-                        }
-                        else{ //At least one handle could not be found
-                                fprintf(stderr, "error: users not found\n");
-                        }
-                }
-                else{ //Invalid command structure
-                        fprintf(stderr, "error: unfriend command usage: unfriend handle1 handle2\n");
-                }
+		if(data[1] != NULL && data[2] != NULL){
+			//Remove newline
+			if(data[2][strlen(data[2])-1] == '\n'){
+				data[2][strlen(data[2])-1] = '\0';
+			}
+			//Check whether both users exist
+			if(ht_has(t, (void*)data[1]) && ht_has(t, (void*)data[2])){
+				char * handles[] = {data[1], data[2]};
+				//Remove friendship
+				friend(handles, false);
+			}
+			else{ //At least one handle could not be found
+ 				fprintf(stderr, "error: users not found\n");
+ 			}
+		}
+		else{ //Invalid command structure
+			fprintf(stderr, "error: unfriend command usage: unfriend handle1 handle2\n");
+		}
 	}
 	else{ 							//Catch any unrecognizable commands
 		fputs("error: not a valid command", stderr);
