@@ -18,7 +18,7 @@
 
 #define BUF_SIZE 1024
 #define MAX_COMMANDS 4
-#define FRIEND_BLOCK 4 //10 TODO revert value
+#define FRIEND_BLOCK 10
 
 typedef struct person_s{
 	char *first_name;		// First name
@@ -92,10 +92,15 @@ void reformat(bool is_quit){
  *
  */
 void printStats(){
-	//If only one user, print that there is one user
-	//Else print that there are N users
-	//If only one friendship, print that there is one friendship
-	//Else print that there are N friendships
+	if(people == 1){ //If there's only 1 person, its impossible to have any friends
+		printf("Statistics: 1 person, 0 friendships\n");
+	}
+	else if(friendships == 1){ //If there's 1 friendship, its impossible to have only 1 person
+		printf("Statistics: %i people, 1 friendship\n", people);
+	}
+	else{
+		printf("Statistics: %i people, %i friendships\n", people, friendships);
+	}
 }
 
 /*
@@ -152,6 +157,7 @@ void friend(char * handles[], bool is_friendly){
 					for(size_t j = i; j < f1->friend_count + 1; j++){
 						f1->friends[j] = f1->friends[j+1]; 
 					}
+
 					//Tallying friend removal
 					f1->friend_count--;
 					if((f1->friend_count + FRIEND_BLOCK) < f1->max_friends){ //Check for an unused block of friend slots
@@ -173,6 +179,7 @@ void friend(char * handles[], bool is_friendly){
 					for(size_t j = i; j < f2->friend_count + 1; j++){
 						f2->friends[j] = f2->friends[j+1];
 					}
+
 					//Tallying friend removal
 					f2->friend_count--;
 					friendships--;
@@ -182,7 +189,6 @@ void friend(char * handles[], bool is_friendly){
 					}
 					return;
 				}
-
 			}
 		}
 	}
@@ -220,21 +226,22 @@ void friend(char * handles[], bool is_friendly){
  *
  */
 void parseCommands(char ** data){
-	if(strcmp(data[0], "add") == 0){						//Add new user
-		//Validate command
-		if((data[1] != NULL && data[2] != NULL && data[3] != NULL)){
+	if(strcmp(data[0], "add") == 0){								//Add new user
+		if((data[1] != NULL && data[2] != NULL && data[3] != NULL)){ //Validate command length
 			//Copy data values
 			char *f_name = strdup(data[1]);
 			char *l_name = strdup(data[2]);
 			char *handle = strdup(data[3]);
-			//Remove newlien character
-			if(handle[strlen(handle)-1] == '\n'){
+		
+			//Validate command syntax
+			if(handle[strlen(handle)-1] == '\n'){ //Remove newline character
 				handle[strlen(handle)-1] = '\0';
 			}
 			if(strlen(handle) < 1){ //Check for empty handles
-				fprintf(stderr, "error: cannot use an empty handle\n");
+				fprintf(stderr, "error: add command usage: first-name last-name handle\n");
 			}
 			else if(!ht_has(t, (void*)handle)){ //Make sure handle is available
+		
 				//Person is initialized
 				person_t* new_person = calloc(1, sizeof(person_t));
 				new_person->first_name = strdup(f_name);
@@ -251,6 +258,7 @@ void parseCommands(char ** data){
 			else{ //Handle is taken
 				fprintf(stderr, "error: The handle '%s' is taken by another user\n", data[3]);
 			}
+		
 			//Free allocated memory
 			free(f_name);
 			free(l_name);
@@ -260,40 +268,41 @@ void parseCommands(char ** data){
 			fprintf(stderr, "error: add command usage: first-name last-name handle\n");
 		}
 	}
-	else if(strcmp(data[0], "friend") == 0){					//Make two users friends
-		//Validate command
-		if(data[1] != NULL && data[2] != NULL){
-			//Remove newline
-			if(data[2][strlen(data[2])-1] == '\n'){
+	else if(strcmp(data[0], "friend") == 0){							//Make two users friends
+		if(data[1] != NULL && data[2] != NULL){ //Validate command length
+		
+			//Validate command syntax
+			if(data[2][strlen(data[2])-1] == '\n'){ //Remove newline character
 				data[2][strlen(data[2])-1] = '\0';
 			}
-			//Check whether both users exist
-			if(ht_has(t, (void*)data[1]) && ht_has(t, (void*)data[2])){
+			if(strlen(data[1]) < 1 || strlen(data[2]) < 1){ //Check for empty handles
+				fprintf(stderr, "error: friend command usage: friend handle1 handle2\n");
+			}
+			else if(ht_has(t, (void*)data[1]) && ht_has(t, (void*)data[2])){ //Check whether both users exist
 				char * handles[] = {data[1], data[2]};
 				//Add friendship
 				friend(handles, true);
 			}
 			else{ //At least one handle could not be found
-				fprintf(stderr, "error: users not found\n");
+				fprintf(stderr, "error: one or more users not found\n");
 			}
 		}
 		else{ //Invalid command structure
 			fprintf(stderr, "error: friend command usage: friend handle1 handle2\n");
 		}
 	}
-	else if(strcmp(data[0], "init") == 0 || strcmp(data[0], "init\n") == 0){	//Clear table and reset it
+	else if(strcmp(data[0], "init") == 0 || strcmp(data[0], "init\n") == 0){			//Clear table and reset it
 		reformat(false);
 	}
-	else if(strcmp(data[0], "print") == 0){						//Print data on a specific user
-		//Validate command
-		if(data[1] != NULL){
-			//Remove newline character
-			if(data[1][strlen(data[1])-1] == '\n'){
+	else if(strcmp(data[0], "print") == 0){								//Print data on a specific user
+		if(data[1] != NULL){ //Validate command length
+		
+			//Validate command syntax
+			if(data[1][strlen(data[1])-1] == '\n'){ //Remove newline character
 				data[1][strlen(data[1])-1] = '\0';
 			}
 			if(ht_has(t, (void*)data[1])){ //Does user exist
 				printInfo(data[1]);
-				//ht_dump(t, true);	//Useful for error checking
 			}
 			else{ //Handle could not be found
 				fprintf(stderr, "error: '%s' is not a valid user\n", data[1]);
@@ -303,14 +312,14 @@ void parseCommands(char ** data){
 			fprintf(stderr, "error: print command usage: print handle\n");
 		}
 	}
-	else if(strcmp(data[0], "quit") == 0 || strcmp(data[0], "quit\n") == 0){	//Clear table and exit program
+	else if(strcmp(data[0], "quit") == 0 || strcmp(data[0], "quit\n") == 0){			//Clear table and exit program
 		reformat(true);
 	}
-	else if(strcmp(data[0], "size") == 0){						//Print number of friends a user has
-		//Validate command
-		if(data[1] != NULL){
-			//Remove newline character
-			if(data[1][strlen(data[1])-1] == '\n'){
+	else if(strcmp(data[0], "size") == 0){								//Print number of friends a user has
+		if(data[1] != NULL){ //Validate command length
+		
+			//Validate command syntax
+			if(data[1][strlen(data[1])-1] == '\n'){ //Remove newline character
 				data[1][strlen(data[1])-1] = '\0';
 			}
 			if(ht_has(t, (void*)data[1])){ //Does user exist
@@ -333,19 +342,20 @@ void parseCommands(char ** data){
 			fprintf(stderr, "error: print command usage: print handle\n");
 		}
 	}
-	else if(strcmp(data[0], "stats") == 0 || strcmp(data[0], "stats\n") == 0){	//Print cumulative user data
-		//Format: stats
-		//Send to stat function
+	else if(strcmp(data[0], "stats") == 0 || strcmp(data[0], "stats\n") == 0){			//Print cumulative user data
+		printStats();
 	}
-	else if(strcmp(data[0], "unfriend") == 0){					//Make two users not friends
-		///Validate command
-		if(data[1] != NULL && data[2] != NULL){
-			//Remove newline
-			if(data[2][strlen(data[2])-1] == '\n'){
+	else if(strcmp(data[0], "unfriend") == 0){							//Make two users not friends
+		if(data[1] != NULL && data[2] != NULL){ //Validate command length
+		
+			//Validate command syntax
+			if(data[2][strlen(data[2])-1] == '\n'){ //Remove newline character
 				data[2][strlen(data[2])-1] = '\0';
 			}
-			//Check whether both users exist
-			if(ht_has(t, (void*)data[1]) && ht_has(t, (void*)data[2])){
+			if(strlen(data[1]) < 1 || strlen(data[2]) < 1){ //Check for empty handles
+				fprintf(stderr, "error: unfriend command usage: unfriend handle1 handle2\n");
+			}
+			else if(ht_has(t, (void*)data[1]) && ht_has(t, (void*)data[2])){ //Check whether both users exist
 				char * handles[] = {data[1], data[2]};
 				//Remove friendship
 				friend(handles, false);
@@ -358,9 +368,7 @@ void parseCommands(char ** data){
 			fprintf(stderr, "error: unfriend command usage: unfriend handle1 handle2\n");
 		}
 	}
-	else{ 										//Catch any unrecognizable commands
-		fputs("error: not a valid command", stderr);
-	}
+	//Ignore any unrecognizable commands
 }
 
 /*
@@ -369,17 +377,22 @@ void parseCommands(char ** data){
  * @return Whether the code ran successfully or not
  */
 int main(void){
+
+	//Initialize varaibles
 	char buffer[BUF_SIZE];
 	char *test;
 	char **input = (char **)calloc(MAX_COMMANDS, sizeof(char *));
 	const char *delim = " ";
 	is_active = true;
-
+	
+	//Create table
 	t = ht_create(str_hash, str_equals, tablePrint, tableDel);
 
-	while(is_active){
+	while(is_active){ //Main loop
 		printf("amici> ");
 		fgets(buffer, BUF_SIZE, stdin);
+
+		//Isolate tokens from command line
 		test = strtok(buffer, delim);
 		for(int i = 0; i < MAX_COMMANDS; i++){
 			if(test != NULL){
@@ -389,8 +402,12 @@ int main(void){
 			}
 			else break;
 		}
+
+		//Parse commands
 		parseCommands(input);
 	}
+
+	//Free allocated memory and quit
 	for(int i = 0; i < MAX_COMMANDS; i++){
 		free(input[i]);
 	}
